@@ -1,6 +1,6 @@
-use std::io::{Read, Stdin, Stdout, Write};
 use crate::bf_executor::BFExecuter;
 use crate::state::ProgramState;
+use std::io::{Read, Stdin, Stdout, Write};
 
 pub struct BFSimpleInterpreter {
     program: Vec<char>,
@@ -25,7 +25,6 @@ impl BFSimpleInterpreter {
 impl BFExecuter for BFSimpleInterpreter {
     fn execute(&mut self) -> () {
         while self.machine.ip < self.program.len() {
-
             let curr = self.program[self.machine.ip];
 
             match curr {
@@ -86,7 +85,6 @@ impl BFExecuter for BFSimpleInterpreter {
 
             self.machine.ip += 1;
             self.inst_evaluated += 1;
-
         }
     }
 

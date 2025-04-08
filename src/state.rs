@@ -1,4 +1,3 @@
-
 pub struct ProgramState {
     pub ip: usize,
     pub dp: usize,
