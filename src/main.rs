@@ -24,6 +24,6 @@ fn main() {
 
     let program_run_time = end_time.duration_since(start_time).as_secs_f64();
 
-    println!("Instructions Evaluated {:?}", bf_inter.instruction_count());
-    println!("Time Elapsed {:?}", program_run_time);
+    println!("Instructions {:?}", bf_inter.instruction_count());
+    println!("Time Elapsed {:?} sec.", program_run_time);
 }
