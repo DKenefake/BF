@@ -11,6 +11,7 @@ pub enum Opcode {
     JUMPIFNZERO { arg: usize },
     SETTO { arg: i32 },
     SCANBY { arg: i32 },
+    Multi { arg1: i32, arg2: i32 },
 }
 
 pub fn compile_code(program_code: String) -> Vec<Opcode> {
@@ -28,17 +29,19 @@ pub fn compile_code(program_code: String) -> Vec<Opcode> {
 
     let code = gen_scanning_ops(code);
 
-    println!("Scan code analysis {:?}", code.len());
+    println!("Scan code analysis size {:?}", code.len());
 
-    let code = reset_bracket(code);
+    let code = loop_transformations(code);
 
-    let lll = find_lowest_level_loops(&code);
+    println!("Loop transformation size {:?}", code.len());
 
-    for (x, y) in lll {
-        println!("Lowest Level Loops at {x} {y}")
-    }
+    let code = remove_pointless_code_alteration(code);
+    let code = gen_scanning_ops(code);
+    let code = loop_transformations(code);
 
-    code
+    println!("Pass 2 of Compile {:?}", code.len());
+
+    reset_bracket(code)
 }
 
 pub fn tokenize_instructions(program_code: String) -> Vec<Opcode> {
@@ -178,6 +181,10 @@ pub fn remove_pointless_code_alteration(opcodes: Vec<Opcode>) -> Vec<Opcode> {
                     output.pop();
                     output.push(opcode)
                 }
+                Opcode::SETTO { arg: arg2 } => {
+                    output.pop();
+                    output.push(opcode)
+                }
                 _ => output.push(opcode),
             },
 
@@ -188,7 +195,6 @@ pub fn remove_pointless_code_alteration(opcodes: Vec<Opcode>) -> Vec<Opcode> {
                 }
                 _ => output.push(opcode),
             },
-
             _ => output.push(opcode),
         }
     }
@@ -248,6 +254,201 @@ pub fn find_lowest_level_loops(opcodes: &Vec<Opcode>) -> Vec<(usize, usize)> {
     }
 
     output
+}
+
+pub fn is_simple_loop(opcodes: &Vec<Opcode>, start: usize, end: usize) -> bool {
+    // check if this is a loop with a net of no movement on the data pointer
+    // and that there aren't any other operations other than MOVE and CHANGE
+
+    let mut movement = 0;
+
+    for i in (start + 1)..end {
+        match opcodes[i] {
+            Opcode::MOVE { arg } => {
+                movement += arg;
+            }
+            Opcode::CHANGE { .. } => {}
+            _ => {
+                return false;
+            }
+        }
+    }
+
+    movement == 0
+}
+
+pub fn find_transform_if_multi_loop(
+    opcodes: &Vec<Opcode>,
+    start: usize,
+    end: usize,
+) -> Option<Vec<Opcode>> {
+    // look for loops that look like the following
+    // [CHANGE(1)MOVE(K)CHANGE(L)MOVE(-K)]
+    match opcodes.as_slice()[(start + 1)..end] {
+        [
+            Opcode::CHANGE { arg: -1 },
+            Opcode::MOVE { arg: x },
+            Opcode::CHANGE { arg: l },
+            Opcode::MOVE { arg: y },
+        ] if y + x == 0 => Some(vec![
+            Opcode::Multi { arg1: x, arg2: l },
+            Opcode::SETTO { arg: 0 },
+        ]),
+        [
+            Opcode::CHANGE { arg: -1 },
+            Opcode::MOVE { arg: m1 },
+            Opcode::CHANGE { arg: a1 },
+            Opcode::MOVE { arg: m2 },
+            Opcode::CHANGE { arg: a2 },
+            Opcode::MOVE { arg: m3 },
+        ] if m1 + m2 + m3 == 0 => Some(vec![
+            Opcode::Multi { arg1: m1, arg2: a1 },
+            Opcode::Multi {
+                arg1: m2 + m1,
+                arg2: a2,
+            },
+            Opcode::SETTO { arg: 0 },
+        ]),
+        [
+            Opcode::CHANGE { arg: -1 },
+            Opcode::MOVE { arg: m1 },
+            Opcode::CHANGE { arg: a1 },
+            Opcode::MOVE { arg: m2 },
+            Opcode::CHANGE { arg: a2 },
+            Opcode::MOVE { arg: m3 },
+            Opcode::CHANGE { arg: a3 },
+            Opcode::MOVE { arg: m4 },
+        ] if m1 + m2 + m3 + m4 == 0 => Some(vec![
+            Opcode::Multi { arg1: m1, arg2: a1 },
+            Opcode::Multi {
+                arg1: m2 + m1,
+                arg2: a2,
+            },
+            Opcode::Multi {
+                arg1: m3 + m2 + m1,
+                arg2: a3,
+            },
+            Opcode::SETTO { arg: 0 },
+        ]),
+        [
+            Opcode::MOVE { arg: x },
+            Opcode::CHANGE { arg: l },
+            Opcode::MOVE { arg: y },
+            Opcode::CHANGE { arg: -1 },
+        ] if y + x == 0 => Some(vec![
+            Opcode::Multi { arg1: x, arg2: l },
+            Opcode::SETTO { arg: 0 },
+        ]),
+        [
+            Opcode::MOVE { arg: m1 },
+            Opcode::CHANGE { arg: a1 },
+            Opcode::MOVE { arg: m2 },
+            Opcode::CHANGE { arg: a2 },
+            Opcode::MOVE { arg: m3 },
+            Opcode::CHANGE { arg: -1 },
+        ] if m1 + m2 + m3 == 0 => Some(vec![
+            Opcode::Multi { arg1: m1, arg2: a1 },
+            Opcode::Multi {
+                arg1: m1 + m2,
+                arg2: a2,
+            },
+            Opcode::SETTO { arg: 0 },
+        ]),
+        [
+            Opcode::MOVE { arg: m1 },
+            Opcode::CHANGE { arg: a1 },
+            Opcode::MOVE { arg: m2 },
+            Opcode::CHANGE { arg: a2 },
+            Opcode::MOVE { arg: m3 },
+            Opcode::CHANGE { arg: a3 },
+            Opcode::MOVE { arg: m4 },
+            Opcode::CHANGE { arg: -1 },
+        ] if m1 + m2 + m3 + m4 == 0 => Some(vec![
+            Opcode::Multi { arg1: m1, arg2: a1 },
+            Opcode::Multi {
+                arg1: m1 + m2,
+                arg2: a2,
+            },
+            Opcode::Multi {
+                arg1: m1 + m2 + m3,
+                arg2: a3,
+            },
+            Opcode::SETTO { arg: 0 },
+        ]),
+        _ => None,
+    }
+}
+
+pub fn loop_transformations(opcodes: Vec<Opcode>) -> Vec<Opcode> {
+    // ensure that the bracket opcodes are in a valid state
+    let opcodes = reset_bracket(opcodes);
+
+    let lll = find_lowest_level_loops(&opcodes);
+
+    let mut regions_to_replace = vec![];
+    let mut replacements = vec![];
+
+    for (x, y) in lll.iter() {
+        let repl = find_transform_if_multi_loop(&opcodes, *x, *y);
+
+        if let Some(replacement) = repl {
+            regions_to_replace.push((*x, *y));
+            replacements.push(replacement);
+        }
+    }
+
+    replace_segments(opcodes, regions_to_replace, replacements)
+}
+
+pub fn replace_segments(
+    opcodes: Vec<Opcode>,
+    from: Vec<(usize, usize)>,
+    to: Vec<Vec<Opcode>>,
+) -> Vec<Opcode> {
+    // replace the segments in the opcodes with the new opcodes segments, this is inclusive
+    // e.g. given [A, B, C] with from [(0, 1)] and to [[X, Y]] we get [X, Y, C]
+
+    if from.len() != to.len() {
+        panic!("From and to must be the same length");
+    }
+
+    // we are replacing nothing so we just return the opcodes
+    if from.len() == 0 {
+        return opcodes;
+    }
+
+    let mut replacements = from
+        .iter()
+        .zip(to.iter())
+        .map(|((start, end), replacement)| (*start, *end, replacement))
+        .collect::<Vec<_>>();
+
+    let mut result = Vec::with_capacity(opcodes.len()); // Estimate
+    let mut i = 0;
+
+    // Sort replacements by start index
+    replacements.sort_by_key(|(start, _, _)| *start);
+    let mut rep_idx = 0;
+
+    while i < opcodes.len() {
+        // Check if we're at the next replacement region
+        if rep_idx < replacements.len() && i == replacements[rep_idx].0 {
+            let (_, end, ref replacement_vec) = replacements[rep_idx];
+
+            // Insert replacement
+            result.extend_from_slice(replacement_vec);
+
+            // Skip the replaced range
+            i = end + 1;
+            rep_idx += 1;
+        } else {
+            // No replacement at this index, just copy
+            result.push(opcodes[i].clone());
+            i += 1;
+        }
+    }
+
+    result
 }
 
 pub fn reset_bracket(opcodes: Vec<Opcode>) -> Vec<Opcode> {

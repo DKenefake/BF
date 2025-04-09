@@ -18,9 +18,9 @@ impl BFOpcodeInterpreter {
     ) -> BFOpcodeInterpreter {
         let opcodes = opcode_generator(program_source);
 
-        for (i, op) in opcodes.iter().enumerate() {
-            println!("{:?} {:?}", i, op);
-        }
+        // for (i, op) in opcodes.iter().enumerate() {
+        //     println!("{:?} {:?}", i, op);
+        // }
 
         BFOpcodeInterpreter {
             program: opcodes,
@@ -70,8 +70,12 @@ impl BFExecuter for BFOpcodeInterpreter {
                         self.machine.dp = (self.machine.dp as i32 + arg) as usize;
                     }
                 }
+                Opcode::Multi { arg1: x, arg2: y } => {
+                    let mut placement_index = (self.machine.dp as i32 + x).max(0);
+                    self.machine.memory[placement_index as usize] +=
+                        y * self.machine.memory[self.machine.dp];
+                }
             }
-
             self.machine.ip += 1;
             self.inst_evaluated += 1;
         }
