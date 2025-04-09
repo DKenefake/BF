@@ -1,8 +1,12 @@
 mod bf_executor;
+mod opcode_interpreter;
+mod opcodes;
 mod simple_interpreter;
 mod state;
 
 use crate::bf_executor::BFExecuter;
+use crate::opcode_interpreter::BFOpcodeInterpreter;
+use crate::opcodes::compile_code;
 use crate::simple_interpreter::BFSimpleInterpreter;
 use std::path::Path;
 use std::{env, fs, time};
@@ -14,7 +18,11 @@ fn main() {
 
     let program_source = fs::read_to_string(program_path).expect("Filed to exist");
 
-    let mut bf_inter = BFSimpleInterpreter::new(program_source);
+    // let mut bf_inter = BFSimpleInterpreter::new(program_source);
+
+    let mut bf_inter = BFOpcodeInterpreter::new(program_source, compile_code);
+
+    println!("Compiled");
 
     let start_time = time::Instant::now();
 
