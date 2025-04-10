@@ -11,7 +11,9 @@ pub enum Opcode {
     JUMPIFNZERO { arg: usize },
     SETTO { arg: i32 },
     SCANBY { arg: i32 },
-    Multi { arg1: i32, arg2: i32 },
+    MULTI { arg1: i32, arg2: i32 },
+    MOVINGCHANGE {arg1: i32, arg2: i32, arg3: i32},
+    MOVINGSET {arg1: i32, arg2: i32, arg3: i32},
 }
 
 pub fn compile_code(program_code: String) -> Vec<Opcode> {
@@ -291,7 +293,7 @@ pub fn find_transform_if_multi_loop(
             Opcode::CHANGE { arg: l },
             Opcode::MOVE { arg: y },
         ] if y + x == 0 => Some(vec![
-            Opcode::Multi { arg1: x, arg2: l },
+            Opcode::MULTI { arg1: x, arg2: l },
             Opcode::SETTO { arg: 0 },
         ]),
         [
@@ -302,8 +304,8 @@ pub fn find_transform_if_multi_loop(
             Opcode::CHANGE { arg: a2 },
             Opcode::MOVE { arg: m3 },
         ] if m1 + m2 + m3 == 0 => Some(vec![
-            Opcode::Multi { arg1: m1, arg2: a1 },
-            Opcode::Multi {
+            Opcode::MULTI { arg1: m1, arg2: a1 },
+            Opcode::MULTI {
                 arg1: m2 + m1,
                 arg2: a2,
             },
@@ -319,12 +321,12 @@ pub fn find_transform_if_multi_loop(
             Opcode::CHANGE { arg: a3 },
             Opcode::MOVE { arg: m4 },
         ] if m1 + m2 + m3 + m4 == 0 => Some(vec![
-            Opcode::Multi { arg1: m1, arg2: a1 },
-            Opcode::Multi {
+            Opcode::MULTI { arg1: m1, arg2: a1 },
+            Opcode::MULTI {
                 arg1: m2 + m1,
                 arg2: a2,
             },
-            Opcode::Multi {
+            Opcode::MULTI {
                 arg1: m3 + m2 + m1,
                 arg2: a3,
             },
@@ -336,7 +338,7 @@ pub fn find_transform_if_multi_loop(
             Opcode::MOVE { arg: y },
             Opcode::CHANGE { arg: -1 },
         ] if y + x == 0 => Some(vec![
-            Opcode::Multi { arg1: x, arg2: l },
+            Opcode::MULTI { arg1: x, arg2: l },
             Opcode::SETTO { arg: 0 },
         ]),
         [
@@ -347,8 +349,8 @@ pub fn find_transform_if_multi_loop(
             Opcode::MOVE { arg: m3 },
             Opcode::CHANGE { arg: -1 },
         ] if m1 + m2 + m3 == 0 => Some(vec![
-            Opcode::Multi { arg1: m1, arg2: a1 },
-            Opcode::Multi {
+            Opcode::MULTI { arg1: m1, arg2: a1 },
+            Opcode::MULTI {
                 arg1: m1 + m2,
                 arg2: a2,
             },
@@ -364,17 +366,31 @@ pub fn find_transform_if_multi_loop(
             Opcode::MOVE { arg: m4 },
             Opcode::CHANGE { arg: -1 },
         ] if m1 + m2 + m3 + m4 == 0 => Some(vec![
-            Opcode::Multi { arg1: m1, arg2: a1 },
-            Opcode::Multi {
+            Opcode::MULTI { arg1: m1, arg2: a1 },
+            Opcode::MULTI {
                 arg1: m1 + m2,
                 arg2: a2,
             },
-            Opcode::Multi {
+            Opcode::MULTI {
                 arg1: m1 + m2 + m3,
                 arg2: a3,
             },
             Opcode::SETTO { arg: 0 },
         ]),
+        [Opcode::MOVE {arg:m1}, Opcode::CHANGE {arg:m2}, Opcode::MOVE {arg:m3}] =>{
+            Some(vec![Opcode::MOVINGCHANGE {
+                arg1: m1,
+                arg2: m2,
+                arg3: m3,
+            }])
+        },
+        [Opcode::MOVE {arg:m1}, Opcode::SETTO {arg:m2}, Opcode::MOVE {arg:m3}] =>{
+            Some(vec![Opcode::MOVINGSET {
+                arg1: m1,
+                arg2: m2,
+                arg3: m3,
+            }])
+        }
         _ => None,
     }
 }
@@ -384,6 +400,8 @@ pub fn loop_transformations(opcodes: Vec<Opcode>) -> Vec<Opcode> {
     let opcodes = reset_bracket(opcodes);
 
     let lll = find_lowest_level_loops(&opcodes);
+
+    println!("Number of lower level loops {:?}", lll.len());
 
     let mut regions_to_replace = vec![];
     let mut replacements = vec![];

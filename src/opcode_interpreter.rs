@@ -18,10 +18,6 @@ impl BFOpcodeInterpreter {
     ) -> BFOpcodeInterpreter {
         let opcodes = opcode_generator(program_source);
 
-        // for (i, op) in opcodes.iter().enumerate() {
-        //     println!("{:?} {:?}", i, op);
-        // }
-
         BFOpcodeInterpreter {
             program: opcodes,
             machine: ProgramState::new(),
@@ -70,10 +66,32 @@ impl BFExecuter for BFOpcodeInterpreter {
                         self.machine.dp = (self.machine.dp as i32 + arg) as usize;
                     }
                 }
-                Opcode::Multi { arg1: x, arg2: y } => {
+                Opcode::MULTI { arg1: x, arg2: y } => {
                     let mut placement_index = (self.machine.dp as i32 + x).max(0);
                     self.machine.memory[placement_index as usize] +=
                         y * self.machine.memory[self.machine.dp];
+                }
+                Opcode::MOVINGCHANGE {
+                    arg1: x,
+                    arg2: y,
+                    arg3: z,
+                } => {
+                    while self.machine.memory[self.machine.dp] != 0{
+                        self.machine.dp = (self.machine.dp as i32 + x) as usize;
+                        self.machine.memory[self.machine.dp] += y;
+                        self.machine.dp = (self.machine.dp as i32 + z) as usize;
+                    }
+                }
+                Opcode::MOVINGSET {
+                    arg1: x,
+                    arg2: y,
+                    arg3: z,
+                } => {
+                    while self.machine.memory[self.machine.dp] != 0 {
+                        self.machine.dp = (self.machine.dp as i32 + x) as usize;
+                        self.machine.memory[self.machine.dp] = y;
+                        self.machine.dp = (self.machine.dp as i32 + z) as usize;
+                    }
                 }
             }
             self.machine.ip += 1;
