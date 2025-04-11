@@ -163,13 +163,9 @@ pub fn remove_pointless_code_alteration(opcodes: Vec<Opcode>) -> Vec<Opcode> {
     for &opcode in opcodes.iter().skip(1) {
         match opcode {
             Opcode::SETTO { .. } => match output[output.len() - 1] {
-                Opcode::CHANGE { .. } => {
+                Opcode::CHANGE { .. } | Opcode::SETTO { .. } => {
                     output.pop();
-                    output.push(opcode)
-                }
-                Opcode::SETTO { .. } => {
-                    output.pop();
-                    output.push(opcode)
+                    output.push(opcode);
                 }
                 _ => output.push(opcode),
             },
@@ -177,7 +173,7 @@ pub fn remove_pointless_code_alteration(opcodes: Vec<Opcode>) -> Vec<Opcode> {
             Opcode::CHANGE { arg } => match output[output.len() - 1] {
                 Opcode::SETTO { arg: arg2 } => {
                     output.pop();
-                    output.push(Opcode::SETTO { arg: arg + arg2 })
+                    output.push(Opcode::SETTO { arg: arg + arg2 });
                 }
                 _ => output.push(opcode),
             },
@@ -207,7 +203,7 @@ pub fn gen_scanning_ops(opcodes: Vec<Opcode>) -> Vec<Opcode> {
                         output.pop();
                         output.push(SCANBY { arg });
                     } else {
-                        output.push(opcode)
+                        output.push(opcode);
                     }
                 }
                 _ => output.push(opcode),
@@ -226,10 +222,9 @@ pub fn find_lowest_level_loops(opcodes: &[Opcode]) -> Vec<(usize, usize)> {
 
     let mut all_brackets = vec![];
 
-    for &op in opcodes.iter() {
+    for &op in opcodes {
         match op {
-            JUMPIFNZERO { .. } => all_brackets.push(op),
-            JUMPIFZERO { .. } => all_brackets.push(op),
+            JUMPIFNZERO { .. } | JUMPIFZERO { .. } => all_brackets.push(op),
             _ => {}
         }
     }
@@ -237,7 +232,9 @@ pub fn find_lowest_level_loops(opcodes: &[Opcode]) -> Vec<(usize, usize)> {
     let mut output = vec![];
 
     for (&op1, &op2) in all_brackets.iter().zip(all_brackets.iter().skip(1)) {
-        if let (JUMPIFZERO { arg: x }, JUMPIFNZERO { arg: y }) = (op1, op2) { output.push((y, x)) }
+        if let (JUMPIFZERO { arg: x }, JUMPIFNZERO { arg: y }) = (op1, op2) {
+            output.push((y, x))
+        }
     }
 
     output
@@ -393,7 +390,7 @@ pub fn loop_transformations(opcodes: Vec<Opcode>) -> Vec<Opcode> {
     let mut regions_to_replace = vec![];
     let mut replacements = vec![];
 
-    for (x, y) in lll.iter() {
+    for (x, y) in &lll {
         let repl = find_transform_if_multi_loop(&opcodes, *x, *y);
 
         if let Some(replacement) = repl {
@@ -402,19 +399,19 @@ pub fn loop_transformations(opcodes: Vec<Opcode>) -> Vec<Opcode> {
         }
     }
 
-    replace_segments(opcodes, regions_to_replace, replacements)
+    replace_segments(opcodes, &regions_to_replace, &replacements)
 }
 
 pub fn replace_segments(
     opcodes: Vec<Opcode>,
-    from: Vec<(usize, usize)>,
-    to: Vec<Vec<Opcode>>,
+    from: &[(usize, usize)],
+    to: &[Vec<Opcode>],
 ) -> Vec<Opcode> {
     // replace the segments in the opcodes with the new opcodes segments, this is inclusive
     // e.g. given [A, B, C] with from [(0, 1)] and to [[X, Y]] we get [X, Y, C]
 
     if from.len() != to.len() {
-        panic!("From and to must be the same length");
+        return opcodes;
     }
 
     // we are replacing nothing so we just return the opcodes

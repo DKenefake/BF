@@ -6,7 +6,7 @@ pub struct ProgramState {
 }
 
 impl ProgramState {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             ip: 0,
             dp: 0,
@@ -14,7 +14,8 @@ impl ProgramState {
         }
     }
 
-    pub fn is_valid_dp_location(&self, pos: usize) -> bool {
+    #[must_use]
+    pub const fn is_valid_dp_location(&self, pos: usize) -> bool {
         pos < 30000
     }
 }

@@ -11,8 +11,8 @@ pub struct BFSimpleInterpreter {
 }
 
 impl BFSimpleInterpreter {
-    pub fn new(program: String) -> BFSimpleInterpreter {
-        BFSimpleInterpreter {
+    pub fn new(program: String) -> Self {
+        Self {
             program: program.chars().collect(),
             machine: ProgramState::new(),
             stdin: std::io::stdin(),
@@ -105,13 +105,15 @@ impl BFExecuter for BFSimpleInterpreter {
     fn read_char(&mut self) {
         let mut byte = [0_u8];
         self.stdin.lock().read_exact(&mut byte).expect("TODO");
-        self.machine.memory[self.machine.dp] = byte[0] as i32;
+        self.machine.memory[self.machine.dp] = i32::from(byte[0]);
     }
 
     fn write_char(&mut self) {
         let mut byte = [0_u8];
-        byte[0] = self.machine.memory[self.machine.dp] as u8;
-        self.stdout.write_all(&byte).expect("Wrote out the char correctly");
+        byte[0] = (self.machine.memory[self.machine.dp] & 0xFF) as u8;
+        self.stdout
+            .write_all(&byte)
+            .expect("Wrote out the char correctly");
     }
 
     fn instruction_count(&mut self) -> usize {

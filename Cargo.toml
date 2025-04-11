@@ -2,6 +2,11 @@
 name = "bf"
 version = "0.1.0"
 edition = "2024"
+license = "BSD-3"
+repository = "https://github.com/DKenefake/BF"
+description = "A set of tools for brainfuck"
+keywords = ["repl", "interpreter", "brainfuck"]
+categories = ["development-tools"]
 
 [dependencies]
 

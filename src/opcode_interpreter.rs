@@ -12,8 +12,8 @@ pub struct BFOpcodeInterpreter {
 }
 
 impl BFOpcodeInterpreter {
-    pub fn new(program_source: Vec<Opcode>) -> BFOpcodeInterpreter {
-        BFOpcodeInterpreter {
+    pub fn new(program_source: Vec<Opcode>) -> Self {
+        Self {
             program: program_source,
             machine: ProgramState::new(),
             stdin: std::io::stdin(),
@@ -105,12 +105,12 @@ impl BFExecuter for BFOpcodeInterpreter {
             .lock()
             .read_exact(&mut byte)
             .expect("Expected to be able to read a single char");
-        self.machine.memory[self.machine.dp] = byte[0] as i32;
+        self.machine.memory[self.machine.dp] = i32::from(byte[0]);
     }
 
     fn write_char(&mut self) {
         let mut byte = [0_u8];
-        byte[0] = self.machine.memory[self.machine.dp] as u8;
+        byte[0] = (self.machine.memory[self.machine.dp] & 0xFF) as u8;
         self.stdout
             .write_all(&byte)
             .expect("Expected to be able to write a single char");
