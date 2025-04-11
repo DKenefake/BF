@@ -74,9 +74,11 @@ fn main() {
                 }
                 Action::UseDebugInterpreter => {
                     interpreter_mode = InterpreterMode::UseDebugInterpreter;
+                    println!(":: Debug mode on");
                 }
                 Action::UseFastInterpreter => {
                     interpreter_mode = InterpreterMode::UseFastInterpreter;
+                    println!(":: Fast mode on");
                 }
             }
             continue;
@@ -94,11 +96,11 @@ fn main() {
             }
 
             match interpreter_mode {
-                InterpreterMode::UseDebugInterpreter => {
+                InterpreterMode::UseFastInterpreter => {
                     let compiled_code = compile_code(sanitized_code);
                     BFOpcodeInterpreter::new(compiled_code).execute()
                 }
-                InterpreterMode::UseFastInterpreter => {
+                InterpreterMode::UseDebugInterpreter => {
                     BFSimpleInterpreter::new(sanitized_code).execute()
                 }
             };

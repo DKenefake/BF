@@ -4,11 +4,26 @@ use bf::opcodes::compile_code;
 use bf::source_utils::{check_program_brackets, remove_no_coding_symbols};
 use std::path::Path;
 use std::process::exit;
-use std::{env, fs, time};
+use std::{fs, time};
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+#[command(version, about = "Program that will compile and run a BrainFuck program to an Intermediate Representation", long_about = None)]
+struct Args{
+    #[arg(short, long)]
+    bf_file_path: String,
+    #[arg(short = 'o', long, default_value = "false")]
+    gen_object_file: bool
+}
 
 fn main() {
+
+    let args = Args::parse();
+
+    let program_path_str = args.bf_file_path;
+    let _ = args.gen_object_file;
+
     // generate the bf program from path
-    let program_path_str = env::args().collect::<Vec<String>>()[1].clone();
     let program_path = Path::new(&program_path_str);
 
     let program_source_result = fs::read_to_string(program_path);
@@ -24,6 +39,8 @@ fn main() {
     }
 
     let compiled_code = compile_code(program_source);
+
+
 
     let mut bf_inter = BFOpcodeInterpreter::new(compiled_code);
 
