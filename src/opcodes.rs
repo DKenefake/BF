@@ -1,5 +1,4 @@
 use crate::opcodes::Opcode::{JUMPIFNZERO, JUMPIFZERO, SCANBY};
-use std::io::stdout;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum Opcode {
@@ -12,36 +11,17 @@ pub enum Opcode {
     SETTO { arg: i32 },
     SCANBY { arg: i32 },
     MULTI { arg1: i32, arg2: i32 },
-    MOVINGCHANGE {arg1: i32, arg2: i32, arg3: i32},
-    MOVINGSET {arg1: i32, arg2: i32, arg3: i32},
+    MOVINGCHANGE { arg1: i32, arg2: i32, arg3: i32 },
+    MOVINGSET { arg1: i32, arg2: i32, arg3: i32 },
 }
 
 pub fn compile_code(program_code: String) -> Vec<Opcode> {
+    // current compilation of BF to Opcdoes
     let code = tokenize_instructions(program_code);
-
-    println!("Program Tokens {:?}", code.len());
-
     let code = compress_foldable_opcodes(code);
-
-    println!("Initial IR size {:?}", code.len());
-
-    let code = remove_pointless_code_alteration(code);
-
-    println!("Ineffective analysis size {:?}", code.len());
-
-    let code = gen_scanning_ops(code);
-
-    println!("Scan code analysis size {:?}", code.len());
-
-    let code = loop_transformations(code);
-
-    println!("Loop transformation size {:?}", code.len());
-
     let code = remove_pointless_code_alteration(code);
     let code = gen_scanning_ops(code);
     let code = loop_transformations(code);
-
-    println!("Pass 2 of Compile {:?}", code.len());
 
     reset_bracket(code)
 }
@@ -51,12 +31,10 @@ pub fn tokenize_instructions(program_code: String) -> Vec<Opcode> {
     let mut ops = vec![];
 
     // remove anything that isn't a BF statement
-
-    let valid_chars = vec!['+', '-', '<', '>', ',', '.', '[', ']'];
-
+    let valid_chars = ['+', '-', '<', '>', ',', '.', '[', ']'];
     let bf_valid_code = |c| valid_chars.contains(&c);
 
-    let mut program_code = program_code.clone();
+    let mut program_code = program_code;
     program_code.retain(bf_valid_code);
 
     let mut pos = 0;
@@ -117,7 +95,9 @@ pub fn tokenize_instructions(program_code: String) -> Vec<Opcode> {
 }
 
 pub fn compress_foldable_opcodes(opcodes: Vec<Opcode>) -> Vec<Opcode> {
-    assert!(opcodes.len() > 0);
+    if opcodes.len() <= 1 {
+        return opcodes;
+    }
 
     let mut output = vec![*opcodes.first().unwrap()];
 
@@ -174,6 +154,10 @@ pub fn remove_pointless_code_alteration(opcodes: Vec<Opcode>) -> Vec<Opcode> {
     // in the same way ..., SetTo(x), Change(k), is equivalent to the following
     // ..., SetTo(x + k),
 
+    if opcodes.len() <= 1 {
+        return opcodes;
+    }
+
     let mut output = vec![*opcodes.first().unwrap()];
 
     for &opcode in opcodes.iter().skip(1) {
@@ -183,7 +167,7 @@ pub fn remove_pointless_code_alteration(opcodes: Vec<Opcode>) -> Vec<Opcode> {
                     output.pop();
                     output.push(opcode)
                 }
-                Opcode::SETTO { arg: arg2 } => {
+                Opcode::SETTO { .. } => {
                     output.pop();
                     output.push(opcode)
                 }
@@ -208,6 +192,10 @@ pub fn gen_scanning_ops(opcodes: Vec<Opcode>) -> Vec<Opcode> {
     // given the following code ..., JumpIfZero, Move(K), JumpifNotZero, ...
     // this can be replaced with the following opcodes ..., ScanBy(k), ....
 
+    if opcodes.len() <= 2 {
+        return opcodes;
+    }
+
     let mut output: Vec<Opcode> = vec![opcodes[0], opcodes[1]];
 
     for &opcode in opcodes.iter().skip(2) {
@@ -231,7 +219,7 @@ pub fn gen_scanning_ops(opcodes: Vec<Opcode>) -> Vec<Opcode> {
     output
 }
 
-pub fn find_lowest_level_loops(opcodes: &Vec<Opcode>) -> Vec<(usize, usize)> {
+pub fn find_lowest_level_loops(opcodes: &[Opcode]) -> Vec<(usize, usize)> {
     // basically scan from every open bracket and if we hit a closing bracket before
     // we hit another open bracket we know this is the lowest level possible which opens up some
     // possibilities for optimization
@@ -249,23 +237,20 @@ pub fn find_lowest_level_loops(opcodes: &Vec<Opcode>) -> Vec<(usize, usize)> {
     let mut output = vec![];
 
     for (&op1, &op2) in all_brackets.iter().zip(all_brackets.iter().skip(1)) {
-        match (op1, op2) {
-            (JUMPIFZERO { arg: x }, JUMPIFNZERO { arg: y }) => output.push((y, x)),
-            _ => {}
-        }
+        if let (JUMPIFZERO { arg: x }, JUMPIFNZERO { arg: y }) = (op1, op2) { output.push((y, x)) }
     }
 
     output
 }
 
-pub fn is_simple_loop(opcodes: &Vec<Opcode>, start: usize, end: usize) -> bool {
+pub fn is_simple_loop(opcodes: &[Opcode], start: usize, end: usize) -> bool {
     // check if this is a loop with a net of no movement on the data pointer
     // and that there aren't any other operations other than MOVE and CHANGE
 
     let mut movement = 0;
 
-    for i in (start + 1)..end {
-        match opcodes[i] {
+    for op in opcodes.iter().take(end).skip(start + 1) {
+        match &op {
             Opcode::MOVE { arg } => {
                 movement += arg;
             }
@@ -377,20 +362,24 @@ pub fn find_transform_if_multi_loop(
             },
             Opcode::SETTO { arg: 0 },
         ]),
-        [Opcode::MOVE {arg:m1}, Opcode::CHANGE {arg:m2}, Opcode::MOVE {arg:m3}] =>{
-            Some(vec![Opcode::MOVINGCHANGE {
-                arg1: m1,
-                arg2: m2,
-                arg3: m3,
-            }])
-        },
-        [Opcode::MOVE {arg:m1}, Opcode::SETTO {arg:m2}, Opcode::MOVE {arg:m3}] =>{
-            Some(vec![Opcode::MOVINGSET {
-                arg1: m1,
-                arg2: m2,
-                arg3: m3,
-            }])
-        }
+        [
+            Opcode::MOVE { arg: m1 },
+            Opcode::CHANGE { arg: m2 },
+            Opcode::MOVE { arg: m3 },
+        ] => Some(vec![Opcode::MOVINGCHANGE {
+            arg1: m1,
+            arg2: m2,
+            arg3: m3,
+        }]),
+        [
+            Opcode::MOVE { arg: m1 },
+            Opcode::SETTO { arg: m2 },
+            Opcode::MOVE { arg: m3 },
+        ] => Some(vec![Opcode::MOVINGSET {
+            arg1: m1,
+            arg2: m2,
+            arg3: m3,
+        }]),
         _ => None,
     }
 }
@@ -400,8 +389,6 @@ pub fn loop_transformations(opcodes: Vec<Opcode>) -> Vec<Opcode> {
     let opcodes = reset_bracket(opcodes);
 
     let lll = find_lowest_level_loops(&opcodes);
-
-    println!("Number of lower level loops {:?}", lll.len());
 
     let mut regions_to_replace = vec![];
     let mut replacements = vec![];
@@ -431,7 +418,7 @@ pub fn replace_segments(
     }
 
     // we are replacing nothing so we just return the opcodes
-    if from.len() == 0 {
+    if from.is_empty() {
         return opcodes;
     }
 
@@ -451,7 +438,7 @@ pub fn replace_segments(
     while i < opcodes.len() {
         // Check if we're at the next replacement region
         if rep_idx < replacements.len() && i == replacements[rep_idx].0 {
-            let (_, end, ref replacement_vec) = replacements[rep_idx];
+            let (_, end, replacement_vec) = replacements[rep_idx];
 
             // Insert replacement
             result.extend_from_slice(replacement_vec);
@@ -461,7 +448,7 @@ pub fn replace_segments(
             rep_idx += 1;
         } else {
             // No replacement at this index, just copy
-            result.push(opcodes[i].clone());
+            result.push(opcodes[i]);
             i += 1;
         }
     }

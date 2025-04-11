@@ -5,7 +5,6 @@ edition = "2024"
 
 [dependencies]
 
-
 [profile.release]
 lto = true
 opt-level = 3
