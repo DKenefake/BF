@@ -40,8 +40,6 @@ fn main() {
 
     let compiled_code = compile_code(program_source);
 
-
-
     let mut bf_inter = BFOpcodeInterpreter::new(compiled_code);
 
     let start_time = time::Instant::now();
