@@ -25,7 +25,6 @@ BF script, you can use the following command:
 
 A simple REPL for BF that allows you to run BF code interactively in the command line.
 It is a simple wrapper around the VM that allows you to run BF code in a more interactive way.
-It will generate 
 If you want to run the repl, you can use the following command:
 ```commandline
 .\bfrepl 
