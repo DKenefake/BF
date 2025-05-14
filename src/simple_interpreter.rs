@@ -105,7 +105,7 @@ impl BFExecuter for BFSimpleInterpreter {
     fn read_char(&mut self) {
         let mut byte = [0_u8];
         self.stdin.lock().read_exact(&mut byte).expect("TODO");
-        self.machine.memory[self.machine.dp] = i32::from(byte[0]);
+        self.machine.memory[self.machine.dp] = byte[0];
     }
 
     fn write_char(&mut self) {

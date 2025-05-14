@@ -28,7 +28,8 @@ impl BFExecuter for BFOpcodeInterpreter {
         while self.machine.ip < self.program.len() {
             match self.program[self.machine.ip] {
                 Opcode::CHANGE { arg } => {
-                    self.machine.memory[self.machine.dp] += arg;
+                    let new_state = self.machine.memory[self.machine.dp] as i32 + arg;
+                    self.machine.memory[self.machine.dp] = new_state as u8;
                 }
                 Opcode::MOVE { arg } => {
                     self.machine.dp = (self.machine.dp as i32 + arg) as usize;
@@ -54,7 +55,7 @@ impl BFExecuter for BFOpcodeInterpreter {
                     }
                 }
                 Opcode::SETTO { arg } => {
-                    self.machine.memory[self.machine.dp] = arg;
+                    self.machine.memory[self.machine.dp] = arg as u8;
                 }
                 Opcode::SCANBY { arg } => {
                     while self.machine.memory[self.machine.dp] != 0 {
@@ -64,7 +65,7 @@ impl BFExecuter for BFOpcodeInterpreter {
                 Opcode::MULTI { arg1: x, arg2: y } => {
                     let placement_index = (self.machine.dp as i32 + x).max(0);
                     self.machine.memory[placement_index as usize] +=
-                        y * self.machine.memory[self.machine.dp];
+                        y as u8 * self.machine.memory[self.machine.dp];
                 }
                 Opcode::MOVINGCHANGE {
                     arg1: x,
@@ -73,7 +74,7 @@ impl BFExecuter for BFOpcodeInterpreter {
                 } => {
                     while self.machine.memory[self.machine.dp] != 0 {
                         self.machine.dp = (self.machine.dp as i32 + x) as usize;
-                        self.machine.memory[self.machine.dp] += y;
+                        self.machine.memory[self.machine.dp] += y as u8;
                         self.machine.dp = (self.machine.dp as i32 + z) as usize;
                     }
                 }
@@ -84,7 +85,7 @@ impl BFExecuter for BFOpcodeInterpreter {
                 } => {
                     while self.machine.memory[self.machine.dp] != 0 {
                         self.machine.dp = (self.machine.dp as i32 + x) as usize;
-                        self.machine.memory[self.machine.dp] = y;
+                        self.machine.memory[self.machine.dp] = y as u8;
                         self.machine.dp = (self.machine.dp as i32 + z) as usize;
                     }
                 }
@@ -105,7 +106,7 @@ impl BFExecuter for BFOpcodeInterpreter {
             .lock()
             .read_exact(&mut byte)
             .expect("Expected to be able to read a single char");
-        self.machine.memory[self.machine.dp] = i32::from(byte[0]);
+        self.machine.memory[self.machine.dp] = byte[0];
     }
 
     fn write_char(&mut self) {

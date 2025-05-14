@@ -2,7 +2,7 @@
 pub struct ProgramState {
     pub ip: usize,
     pub dp: usize,
-    pub memory: [i32; 30000],
+    pub memory: [u8; 30000],
 }
 
 impl ProgramState {
@@ -10,7 +10,7 @@ impl ProgramState {
         Self {
             ip: 0,
             dp: 0,
-            memory: [0i32; 30000],
+            memory: [0; 30000],
         }
     }
 
