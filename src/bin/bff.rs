@@ -6,7 +6,7 @@ use bf::opcodes::Opcode;
 use bf::source_utils::{check_program_brackets, get_c_file_prefix, remove_no_coding_symbols};
 
 #[derive(Parser, Debug)]
-#[command(version, about = "Program that will transcompile a BrainFuck program to C.", long_about = None)]
+#[command(version, about = "Program that will transcompile a BF program to C.", long_about = None)]
 struct Args{
     #[arg(short, long)]
     bf_file_path: String,
