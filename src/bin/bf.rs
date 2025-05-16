@@ -8,7 +8,7 @@ use std::{fs, time};
 use clap::Parser;
 
 #[derive(Parser, Debug)]
-#[command(version, about = "Program that will compile and run a BrainFuck program to an Intermediate Representation", long_about = None)]
+#[command(version, about = "Program that will compile and run a BF program to an Intermediate Representation", long_about = None)]
 struct Args{
     #[arg(short, long)]
     bf_file_path: String,
