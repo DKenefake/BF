@@ -45,7 +45,7 @@ If you want to run the transpiler, you can use the following command:
 
 ## Building the tools
 
-To build all of the tools, run the following on the command line. The binairies can be found in the target directory. 
+To build all of the tools, run the following on the command line. The binaries can be found in the target directory. 
 
 ```commandline
 git clone https://github.com/DKenefake/BF
