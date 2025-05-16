@@ -1,6 +1,6 @@
 # What is this
 
-This is a small project to implement the following things as a learning exercise to understand how to write interpreters for other (more complicated languages).
+This is a small project to implement the following things as a learning exercise to understand how to write interpreters for other (more complicated) languages.
 
 - [x] A parser for BF
 - [x] A barebones interpreter for BF
