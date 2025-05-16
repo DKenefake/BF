@@ -7,7 +7,7 @@ This is a small project to implement the following things as a learning exercise
 - [x] A IR code generator for BF with some optimization passes 
 - [x] A Virtual Machine to run on the IR we generated
 - [x] A REPL for BF, to run interactively in the command line
-- [x] A (com/trans)piler to convert BF into another language or run natively
+- [x] A transpiler to convert BF into C
 
 
 ### Tools
