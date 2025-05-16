@@ -10,7 +10,7 @@ This is a small project to implement the following things as a learning exercise
 - [x] A transpiler to convert BF into C
 
 
-### Tools
+## Tools
 
 ### bf - A decently fast BF VM
 
@@ -42,3 +42,15 @@ If you want to run the transpiler, you can use the following command:
 ```commandline
 .\bff -b <file.bf> -o <file.c> 
 ```
+
+## Building the tools
+
+To build all of the tools, run the following on the command line. The binairies can be found in the target directory. 
+
+```commandline
+git clone https://github.com/DKenefake/BF
+cd bf
+cargo build --release
+````
+
+
